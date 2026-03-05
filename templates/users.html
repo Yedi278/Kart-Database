@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Gestione Utenti</title>
+    <style>
+        body { font-family: Arial; background: #f4f6f9; padding: 20px; }
+        h2 { margin-bottom: 10px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px; border-bottom: 1px solid #ddd; }
+        th { background: #f1f1f1; }
+        button { padding: 5px 10px; cursor: pointer; }
+        .admin { color: red; font-weight: bold; }
+        .operator { color: green; }
+    </style>
+</head>
+<body>
+
+<h2>Gestione Utenti (Tutte le Sedi)</h2>
+
+<div class="card">
+<h3>Crea Nuovo Utente</h3>
+<form method="POST">
+    <input type="text" name="username" placeholder="Username" required>
+    <input type="password" name="password" placeholder="Password" required>
+
+    <select name="role">
+        <option value="0">Admin</option>
+        <option value="1">Operatore</option>
+    </select>
+
+    <select name="location" required>
+        {% for loc in locations %}
+            <option value="{{ loc }}">{{ loc }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Crea Utente</button>
+</form>
+</div>
+
+<div class="card">
+<h3>Utenti Esistenti</h3>
+
+<table>
+<tr>
+    <th>ID</th>
+    <th>Username</th>
+    <th>Ruolo</th>
+    <th>Sede</th>
+    <th>Azioni</th>
+</tr>
+
+{% for user in users %}
+    <tr>
+        <td>{{ user.user_id }}</td>
+        <td>{{ user.user_username }}</td>
+        <td>
+            {% if user.user_role == 0 %}
+                <span class="admin">Admin</span>
+            {% else %}
+                <span class="operator">Operatore</span>
+            {% endif %}
+        </td>
+        <td>{{ user.location }}</td>
+        <td>
+            <form action="{{ url_for('users.update_role', location=user.location, user_id=user.user_id) }}" method="POST">
+                <select name="new_role">
+                    <option value="0">Admin</option>
+                    <option value="1">Operatore</option>
+                </select>
+                <button type="submit">Aggiorna</button>
+            </form>
+
+            <form action="{{ url_for('users.delete_user', location=user.location, user_id=user.user_id) }}" method="POST" style="display:inline;">
+                <button type="submit">Elimina</button>
+            </form>
+        </td>
+    </tr>
+{% endfor %}
+</table>
+
+</div>
+
+<a href="{{ url_for('dashboard.dashboard') }}">← Torna alla Dashboard</a>
+
+</body>
+</html>

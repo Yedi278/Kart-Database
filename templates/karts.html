@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="container py-4">
+
+    <h3 class="mb-4">🏎️ Gestione Kart</h3>
+
+    <!-- FORM CREAZIONE -->
+    <div class="card p-4 mb-4">
+        <form method="POST">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <input type="number" name="num" class="form-control" placeholder="Numero Kart" required>
+                </div>
+                <div class="col-md-4">
+                    <input type="text" name="model" class="form-control" placeholder="Modello">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" name="note" class="form-control" placeholder="Nota">
+                </div>
+                <div class="col-md-2">
+                    <button class="btn btn-primary w-100">Aggiungi</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- TABELLA -->
+    <div class="card p-4">
+        <table class="table table-hover align-middle">
+            <thead>
+                <tr>
+                    <th>Numero</th>
+                    <th>Modello</th>
+                    <th>Nota</th>
+                    <th width="200">Azioni</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kart in karts %}
+                <tr>
+                    <form method="POST" action="{{ url_for('karts.update_kart', kart_id=kart.kart_id) }}">
+                        <td>
+                            <input type="number" name="num" value="{{ kart.kart_num }}" class="form-control">
+                        </td>
+                        <td>
+                            <input type="text" name="model" value="{{ kart.kart_mod }}" class="form-control">
+                        </td>
+                        <td>
+                            <input type="text" name="note" value="{{ kart.kart_note }}" class="form-control">
+                        </td>
+                        <td class="d-flex gap-2">
+                            <button class="btn btn-success btn-sm">Salva</button>
+                    </form>
+
+                    <form method="POST" action="{{ url_for('karts.delete_kart', kart_id=kart.kart_id) }}">
+                            <button class="btn btn-danger btn-sm">Elimina</button>
+                    </form>
+                        </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ url_for('dashboard.dashboard') }}">← Torna alla Dashboard</a>
+    </div>
+
+</div>
+
+{% endblock %}
