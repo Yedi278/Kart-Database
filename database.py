@@ -187,6 +187,33 @@ class Database:
     # KART MANAGEMENT
     # ---------------------------
 
+    def get_filtered_karts(self, num=None, model=None, status=None):
+
+        query = "SELECT * FROM karts WHERE 1=1"
+        params = []
+
+        if num:
+            query += " AND kart_num = ?"
+            params.append(model)
+
+        if model:
+            query += " AND kart_mod LIKE ?"
+            params.append(f"%{model}%")
+
+        if status is not None and status != "":
+            query += " AND kart_status = ?"
+            params.append(status)
+
+        return self.execute_query(query, params, fetch=True)
+
+    def get_kart_models(self):
+        return self.execute_query("""
+            SELECT DISTINCT kart_mod
+            FROM karts
+            WHERE kart_mod IS NOT NULL AND kart_mod != ''
+            ORDER BY kart_mod
+        """, fetch=True)
+
     def get_all_karts(self):
         """Return all karts ordered by kart number."""
         return self.execute_query("""

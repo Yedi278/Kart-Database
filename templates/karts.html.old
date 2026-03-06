@@ -1,9 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
 
-<!-- DataTables -->
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-
 <div class="container py-4">
 
     <h3 class="mb-4">🏎️ Gestione Kart</h3>
@@ -16,7 +13,7 @@
                     <input type="number" name="num" class="form-control" placeholder="Numero Kart" required>
                 </div>
                 <div class="col-md-4">
-                    <input type="text" name="model" class="form-control" placeholder="Modello" required>
+                    <input type="text" name="model" class="form-control" placeholder="Modello">
                 </div>
                 <div class="col-md-3">
                     <input type="text" name="note" class="form-control" placeholder="Nota">
@@ -41,9 +38,7 @@
 
                 <div class="col-md-3">
                     <select name="model" class="form-select">
-                        <option value=""
-                        {% if not request.args.get('model') %}selected{% endif %}>
-                        Tutti i modelli</option>
+                        <option value="">Tutti i modelli</option>
 
                         {% for m in models %}
                         <option value="{{ m.kart_mod }}"
@@ -51,26 +46,16 @@
                             {{ m.kart_mod }}
                         </option>
                         {% endfor %}
+
                     </select>
                 </div>
 
                 <div class="col-md-3">
                     <select name="status" class="form-select">
-                        <option value=""
-                        {% if not request.args.get('status') %}selected{% endif %}>
-                        Tutti gli stati</option>
-
-                        <option value="1"
-                        {% if request.args.get('status') == '1' %}selected{% endif %}>
-                        Disponibile</option>
-
-                        <option value="0"
-                        {% if request.args.get('status') == '0' %}selected{% endif %}>
-                        Manutenzione</option>
-
-                        <option value="2"
-                        {% if request.args.get('status') == '2' %}selected{% endif %}>
-                        Dismesso</option>
+                        <option value="">Tutti gli stati</option>
+                        <option value="1">Disponibile</option>
+                        <option value="0">Manutenzione</option>
+                        <option value="2">Dismessocls</option>
                     </select>
                 </div>
 
@@ -90,9 +75,7 @@
 
     <!-- TABELLA -->
     <div class="card p-4">
-
-        <table id="kartsTable" class="table table-hover align-middle">
-
+        <table class="table table-hover align-middle">
             <thead>
                 <tr>
                     <th width="50">Numero</th>
@@ -102,67 +85,38 @@
                     <th width="200">Azioni</th>
                 </tr>
             </thead>
-
             <tbody>
                 {% for kart in karts %}
                 <tr>
-
                     <form method="POST" action="{{ url_for('karts.update_kart', kart_id=kart.kart_id) }}">
-
                         <td>
                             <input type="number" name="num" value="{{ kart.kart_num }}" class="form-control">
                         </td>
-
                         <td>
                             <input type="text" name="model" value="{{ kart.kart_mod }}" class="form-control">
                         </td>
-
                         <td>
                             <input type="text" name="note" value="{{ kart.kart_note }}" class="form-control">
                         </td>
-
                         <td>
                             <select name="status" class="form-select">
-
-                                <option value="1" {% if kart.kart_status == 1 %}selected{% endif %}>
-                                    Disponibile
-                                </option>
-
-                                <option value="0" {% if kart.kart_status == 0 %}selected{% endif %}>
-                                    Manutenzione
-                                </option>
-
-                                <option value="2" {% if kart.kart_status == 2 %}selected{% endif %}>
-                                    Dismesso
-                                </option>
-
+                                <option value="1" {% if kart.kart_status == 1 %}selected{% endif %}>Attivo</option>
+                                <option value="0" {% if kart.kart_status == 0 %}selected{% endif %}>Off</option>
+                                <option value="2" {% if kart.kart_status == 2 %}selected{% endif %}>Manutenzione</option>
                             </select>
                         </td>
-
                         <td class="d-flex gap-2">
-
-                            <button class="btn btn-success btn-sm">
-                                Salva
-                            </button>
-
+                            <button class="btn btn-success btn-sm">Salva</button>
                     </form>
 
                     <form method="POST" action="{{ url_for('karts.delete_kart', kart_id=kart.kart_id) }}">
-
-                            <button class="btn btn-danger btn-sm">
-                                Elimina
-                            </button>
-
+                            <button class="btn btn-danger btn-sm">Elimina</button>
                     </form>
-
                         </td>
-
                 </tr>
                 {% endfor %}
             </tbody>
-
         </table>
-
     </div>
 
     <div class="mt-3">
@@ -170,29 +124,5 @@
     </div>
 
 </div>
-
-<!-- JQuery -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-
-<!-- DataTables -->
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-
-<script>
-
-$(document).ready(function () {
-
-    $('#kartsTable').DataTable({
-
-        pageLength: 25,
-
-        language: {
-            url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/it-IT.json"
-        }
-
-    });
-
-});
-
-</script>
 
 {% endblock %}

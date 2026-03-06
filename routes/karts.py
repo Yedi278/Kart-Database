@@ -22,32 +22,34 @@ def get_db():
 def karts():
 
     db = get_db()
+
     if not db:
         flash("Sede non valida", "danger")
         return redirect(url_for("dashboard.dashboard"))
 
-    # CREAZIONE KART
+    # creazione kart
     if request.method == "POST":
         num = request.form.get("num")
         model = request.form.get("model")
         note = request.form.get("note")
 
-        if not num:
-            flash("Numero kart obbligatorio", "danger")
-            return redirect(url_for("karts.karts"))
-
-        try:
-            db.create_kart(int(num), model, note)
-            flash("Kart creato con successo", "success")
-        except Exception as e:
-            flash("Numero già esistente", "danger")
+        db.create_kart(int(num), model, note)
 
         return redirect(url_for("karts.karts"))
+    
+    # FILTRI
+    num = request.args.get("num")
+    model = request.args.get("model")
+    status = request.args.get("status")
 
-    karts = db.get_all_karts()
+    karts = db.get_filtered_karts(num, model, status)
+    models = db.get_kart_models()
 
-    return render_template("karts.html", karts=karts)
-
+    return render_template(
+        "karts.html",
+        karts=karts,
+        models=models
+    )
 
 @karts_bp.route("/delete/<int:kart_id>", methods=["POST"])
 @login_required
@@ -79,3 +81,4 @@ def update_kart(kart_id):
 
     flash("Kart aggiornato", "success")
     return redirect(url_for("karts.karts"))
+
