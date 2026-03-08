@@ -3,18 +3,9 @@ import os
 from database import Database
 from config import DB_DIR, locations
 from utils.decorators import login_required
+from utils.other import get_db
 
 karts_bp = Blueprint("karts", __name__, url_prefix="/karts")
-
-
-def get_db():
-    location = session.get("location")
-
-    if not location or location not in locations:
-        return None
-
-    db_path = os.path.join(DB_DIR, locations[location])
-    return Database(db_path)
 
 
 @karts_bp.route("/", methods=["GET", "POST"])

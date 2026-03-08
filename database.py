@@ -90,6 +90,7 @@ class Database:
             piece_name TEXT NOT NULL,
             piece_model TEXT,
             piece_note TEXT,
+            piece_quantity INTEGER DEFAULT 0,
             piece_status INTEGER NOT NULL DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
         )
@@ -277,3 +278,84 @@ class Database:
             self.KART_MAINTENANCE: "Under Maintenance",
             self.KART_RETIRED: "Retired"
         }.get(status, "Unknown")
+    
+    # ---------------------------
+    # PIECE MANAGEMENT
+    # ---------------------------
+
+    def create_piece(self, name, model, quantity, note):
+
+        quantity = int(quantity)
+
+
+        # se quantità = 0 -> da ordinare
+        status = self.PIECE_TO_ORDER if quantity == 0 else self.PIECE_OK
+
+        self.execute_query("""
+            INSERT INTO pieces (
+                piece_name,
+                piece_model,
+                piece_quantity,
+                piece_note,
+                piece_status
+            )
+            VALUES (?, ?, ?, ?, ?)
+        """, (name, model, quantity, note, status))
+
+    def get_all_pieces(self):
+
+        return self.execute_query("""
+            SELECT *
+            FROM pieces
+            ORDER BY piece_name
+        """, fetch=True)
+
+
+    def get_filtered_pieces(self, name=None, model=None, status=None):
+
+        query = "SELECT * FROM pieces WHERE 1=1"
+        params = []
+
+        if name:
+            query += " AND piece_name LIKE ?"
+            params.append(f"%{name}%")
+
+        if model:
+            query += " AND piece_model LIKE ?"
+            params.append(f"%{model}%")
+
+        if status is not None and status != "":
+            query += " AND piece_status = ?"
+            params.append(status)
+
+        query += " ORDER BY piece_name"
+
+        return self.execute_query(query, params, fetch=True)
+
+
+    def update_piece(self, piece_id, name, model, quantity, note, status):
+
+        quantity = int(quantity)
+
+        # se quantità = 0 forza "da ordinare"
+        if quantity == 0:
+            status = self.PIECE_TO_ORDER
+
+        self.execute_query("""
+            UPDATE pieces
+            SET
+                piece_name = ?,
+                piece_model = ?,
+                piece_quantity = ?,
+                piece_note = ?,
+                piece_status = ?
+            WHERE piece_id = ?
+        """, (name, model, quantity, note, status, piece_id))
+
+
+    def delete_piece(self, piece_id):
+
+        self.execute_query("""
+            DELETE FROM pieces
+            WHERE piece_id = ?
+        """, (piece_id,))
