@@ -1,0 +1,175 @@
+{% extends "base.html" %}
+{% block content %}
+
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+
+<div class="container py-4">
+  <h3 class="mb-4">🔧 Gestione Riparazioni</h3>
+
+  <!-- FORM CREAZIONE -->
+  <div class="card p-4 mb-4">
+    <form method="POST">
+      <div class="row g-3 align-items-end">
+        <div class="col-md-3">
+          <label class="form-label">Kart</label>
+          <select name="kart_id" class="form-select" required>
+            <option value="">Seleziona Kart</option>
+            {% for kart in karts %}
+            <option value="{{ kart.kart_id }}">Kart {{ kart.kart_num }}{% if kart.kart_mod %} - {{ kart.kart_mod }}{% endif %}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label">Nota riparazione</label>
+          <input type="text" name="note" class="form-control" placeholder="Nota (opzionale)">
+        </div>
+
+        <div class="col-md-3 text-end">
+          <button type="submit" class="btn btn-primary w-100">Crea riparazione</button>
+        </div>
+      </div>
+
+      <hr class="my-4">
+
+      <h6>Pezzi utilizzati</h6>
+
+      <!-- template nascosto per le righe dei pezzi -->
+      <div id="pieceTemplate" class="d-none">
+        <div class="row g-3 piece-row align-items-center mb-2">
+          <div class="col-md-7">
+            <select name="piece_id" class="form-select">
+              <option value="">Seleziona pezzo</option>
+              {% for piece in pieces %}
+              <option value="{{ piece.piece_id }}">{{ piece.piece_name }} (Disponibili: {{ piece.piece_quantity }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="quantity" class="form-control" min="1" value="1" placeholder="Quantità">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-piece w-100">Rimuovi</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- contenitore dove appaiono le righe -->
+      <div id="piecesContainer">
+        <!-- una riga iniziale visibile -->
+        <div class="row g-3 piece-row align-items-center mb-2">
+          <div class="col-md-7">
+            <select name="piece_id" class="form-select">
+              <option value="">Seleziona pezzo</option>
+              {% for piece in pieces %}
+              <option value="{{ piece.piece_id }}">{{ piece.piece_name }} (Disponibili: {{ piece.piece_quantity }})</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-3">
+            <input type="number" name="quantity" class="form-control" min="1" value="1" placeholder="Quantità">
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-outline-danger btn-sm remove-piece w-100">Rimuovi</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-2">
+        <button type="button" id="addPieceBtn" class="btn btn-secondary">➕ Aggiungi pezzo</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- TABELLA RIPARAZIONI -->
+  <div class="card p-4">
+    <table id="repairsTable" class="table table-hover align-middle">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Kart</th>
+          <th>Nota</th>
+          <th>Pezzi</th>
+          <th>Data</th>
+          <th>Stato</th>
+          <th>Azione</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in repairs %}
+        <tr>
+          <td>{{ r.repair_id }}</td>
+          <td>
+            Kart {{ r.kart_num }}
+            {% if r.kart_mod %}<br><small class="text-muted">{{ r.kart_mod }}</small>{% endif %}
+          </td>
+          <td>{{ r.repair_note or '-' }}</td>
+          <td>
+            {% if r.pieces %}
+              <ul class="mb-0">
+                {% for p in r.pieces %}
+                <li>{{ p.piece_name }} (x{{ p.quantity }})</li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <span class="text-muted">Nessun pezzo</span>
+            {% endif %}
+          </td>
+          <td>{{ r.updated_at }}</td>
+          <td>
+            {% if r.repair_status is defined and r.repair_status == 0 %}
+              <span class="badge bg-warning text-dark">Aperta</span>
+            {% else %}
+              <span class="badge bg-success">Chiusa</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if r.repair_status is defined and r.repair_status == 0 %}
+              <a href="{{ url_for('repairs.close_repair', repair_id=r.repair_id) }}" class="btn btn-sm btn-success">Chiudi</a>
+            {% else %}
+              <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3">
+    <a href="{{ url_for('dashboard.dashboard') }}">← Torna alla Dashboard</a>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+
+<script>
+$(document).ready(function () {
+  $('#repairsTable').DataTable({
+    pageLength: 25,
+    order: [[4, "desc"]],
+    language: {
+      url: "//cdn.datatables.net/plug-ins/1.13.6/i18n/it-IT.json"
+    }
+  });
+});
+
+// Aggiungi riga pezzo clonando il template invisibile
+document.getElementById('addPieceBtn').addEventListener('click', function () {
+  const tpl = document.getElementById('pieceTemplate');
+  const clone = tpl.firstElementChild.cloneNode(true);
+  clone.classList.remove('d-none');
+  document.getElementById('piecesContainer').appendChild(clone);
+});
+
+// Rimuovi riga pezzo (event delegation)
+document.getElementById('piecesContainer').addEventListener('click', function (e) {
+  if (e.target && e.target.classList.contains('remove-piece')) {
+    const row = e.target.closest('.piece-row');
+    if (row) row.remove();
+  }
+});
+</script>
+
+{% endblock %}

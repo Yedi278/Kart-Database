@@ -49,6 +49,7 @@ class Database:
     # ---------------------------
     # GENERIC QUERY
     # ---------------------------
+
     def execute_query(self, query, params=None, fetch=False):
         if not self.conn:
             raise Exception("Database connection is not established.")
@@ -63,7 +64,14 @@ class Database:
         self.conn.commit()
 
         if fetch:
-            return cursor.fetchall()
+            rows = cursor.fetchall()
+
+            # converte sqlite3.Row -> dict
+            result = []
+            for row in rows:
+                result.append(dict(row))
+
+            return result
 
     # ---------------------------
     # TABLE CREATION
@@ -109,17 +117,17 @@ class Database:
 
         # ---- REPAIRS ----
         self.execute_query("""
-        CREATE TABLE IF NOT EXISTS repairs (
-            repair_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            repair_kart_id INTEGER NOT NULL,
-            repair_user_id INTEGER NOT NULL,
-            repair_note TEXT,
-            repair_status INTEGER NOT NULL DEFAULT 0,
-            opened_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            closed_at DATETIME,
-            FOREIGN KEY (repair_kart_id) REFERENCES karts(kart_id) ON DELETE CASCADE,
-            FOREIGN KEY (repair_user_id) REFERENCES users(user_id) ON DELETE SET NULL
-        )
+            CREATE TABLE IF NOT EXISTS repairs (
+                repair_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                repair_kart_id INTEGER NOT NULL,
+                repair_user_id INTEGER NOT NULL,
+                repair_note TEXT,
+                repair_status INTEGER DEFAULT 0,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                closed_at DATETIME,
+                FOREIGN KEY (repair_kart_id) REFERENCES karts(kart_id) ON DELETE CASCADE,
+                FOREIGN KEY (repair_user_id) REFERENCES users(user_id) ON DELETE SET NULL
+            )
         """)
 
         # ---- REPAIR PIECES (many-to-many) ----
@@ -195,7 +203,7 @@ class Database:
 
         if num:
             query += " AND kart_num = ?"
-            params.append(model)
+            params.append(num)
 
         if model:
             query += " AND kart_mod LIKE ?"
@@ -359,3 +367,97 @@ class Database:
             DELETE FROM pieces
             WHERE piece_id = ?
         """, (piece_id,))
+
+    # ---------------------------
+    # REPAIR MANAGEMENT
+    # ---------------------------
+
+    def get_all_repairs(self):
+
+        return self.execute_query("""
+            SELECT
+                r.repair_id,
+                r.repair_note,
+                r.updated_at,
+                k.kart_num,
+                k.kart_mod
+            FROM repairs r
+            JOIN karts k ON r.repair_kart_id = k.kart_id
+            ORDER BY r.updated_at DESC
+        """, fetch=True)
+
+    def create_repair(self, kart_id, user_id, note):
+
+        cursor = self.conn.cursor()
+
+        cursor.execute("""
+            INSERT INTO repairs (repair_kart_id, repair_user_id, repair_note)
+            VALUES (?, ?, ?)
+        """, (kart_id, user_id, note))
+
+        self.conn.commit()
+
+        return cursor.lastrowid
+
+
+    def add_piece_to_repair(self, repair_id, piece_id, quantity):
+
+        self.execute_query("""
+            INSERT INTO repair_pieces (repair_id, piece_id, quantity)
+            VALUES (?, ?, ?)
+        """, (repair_id, piece_id, quantity))
+
+
+    def get_pieces_for_repair(self, repair_id):
+
+        return self.execute_query("""
+            SELECT
+                p.piece_name,
+                rp.quantity
+            FROM repair_pieces rp
+            JOIN pieces p ON rp.piece_id = p.piece_id
+            WHERE rp.repair_id = ?
+        """, (repair_id,), fetch=True)
+
+
+    def get_filtered_repairs(self, kart_num=None, kart_model=None, piece=None):
+
+        query = """
+        SELECT
+            r.repair_id,
+            r.repair_note,
+            r.updated_at,
+            k.kart_num,
+            k.kart_mod
+        FROM repairs r
+        JOIN karts k ON r.repair_kart_id = k.kart_id
+        LEFT JOIN repair_pieces rp ON r.repair_id = rp.repair_id
+        LEFT JOIN pieces p ON rp.piece_id = p.piece_id
+        WHERE 1=1
+        """
+
+        params = []
+
+        if kart_num:
+            query += " AND k.kart_num = ?"
+            params.append(kart_num)
+
+        if kart_model:
+            query += " AND k.kart_mod LIKE ?"
+            params.append(f"%{kart_model}%")
+
+        if piece:
+            query += " AND p.piece_name LIKE ?"
+            params.append(f"%{piece}%")
+
+        query += " GROUP BY r.repair_id ORDER BY r.updated_at DESC"
+
+        return self.execute_query(query, params, fetch=True)
+    
+    def update_repair_timestamp(self, repair_id):
+
+        self.execute_query("""
+        UPDATE repairs
+        SET updated_at = CURRENT_TIMESTAMP
+        WHERE repair_id = ?
+        """, (repair_id,))
