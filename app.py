@@ -1,3 +1,7 @@
+# Kart Database Management System
+# Author: Yehan Edirisinghe
+# Version: 1.0
+
 # app.py
 from flask import Flask
 from config import SECRET_KEY, DB_DIR, locations
